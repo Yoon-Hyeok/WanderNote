@@ -20,7 +20,6 @@ struct ProfileView: View {
         records.filter { Calendar.current.component(.year, from: $0.visitDate) == selectedYear }
     }
     
-    // 💡 핵심 추가: 1월부터 12월까지의 데이터를 무조건 생성해 두는 배열
     var monthlyStats: [(month: Int, count: Int)] {
         (1...12).map { monthIndex in
             let count = recordsForSelectedYear.filter {
@@ -33,7 +32,6 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             List {
-                // 상단 요약 통계 섹션 (기존 동일)
                 Section {
                                     HStack(spacing: 15) {
                                         Button(action: { showingTripList = true }) {
@@ -42,7 +40,6 @@ struct ProfileView: View {
                                         .buttonStyle(PlainButtonStyle())
                                         
                                         Button(action: { showingCityList = true }) {
-                                            // 💡 여기도 cityName 기준으로 변경!
                                             let uniqueCities = Set(records.map { $0.cityName }).count
                                             StatCard(title: "방문 도시 수", value: "\(uniqueCities)곳")
                                         }
@@ -53,12 +50,10 @@ struct ProfileView: View {
                                     .padding(.vertical, 10)
                                 }
                 
-                // 월별 여행 기록 차트 섹션
                 Section {
                                     Chart {
                                         ForEach(monthlyStats, id: \.month) { stat in
                                             BarMark(
-                                                // 💡 X축 값을 정수가 아닌 "1월", "2월" 형태의 '문자열'로 전달합니다.
                                                 x: .value("월", "\(stat.month)월"),
                                                 y: .value("여행 횟수", stat.count)
                                             )
@@ -68,12 +63,10 @@ struct ProfileView: View {
                                     }
                                     .frame(height: 250)
                                     .padding(.vertical)
-                                    // 💡 문자열 카테고리를 사용하므로 복잡한 X축 강제 고정 코드(chartXScale)를 지워도 됩니다.
                                     .chartXAxis {
                                         AxisMarks { _ in
-                                            // 카테고리(문자열) 모드에서는 알아서 텍스트를 막대 정중앙에 배치합니다.
                                             AxisValueLabel()
-                                                .font(.caption2) // 12개가 다 들어가도록 폰트 크기만 살짝 줄임
+                                                .font(.caption2)
                                         }
                                     }
                                     .chartYAxis {
@@ -118,7 +111,6 @@ struct ProfileView: View {
     }
 }
 
-// 💡 전체 여행 기록 리스트 (누르면 상세 화면으로 이동)
 struct TripListView: View {
     var records: [TravelRecord]
     @Environment(\.dismiss) private var dismiss
@@ -126,7 +118,6 @@ struct TripListView: View {
     var body: some View {
         NavigationStack {
             List(records.sorted(by: { $0.visitDate > $1.visitDate })) { record in
-                // 💡 NavigationLink로 감싸서 DetailView로 이동
                 NavigationLink(destination: DetailView(record: record)) {
                     HStack {
                         Text(record.placeName)
@@ -151,23 +142,19 @@ struct TripListView: View {
     }
 }
 
-// 💡 방문한 도시 리스트 (placeName이 아닌 cityName을 기준으로 묶어줌)
 struct CityListView: View {
     var records: [TravelRecord]
     @Environment(\.dismiss) private var dismiss
     
-    // 💡 도시명(cityName)을 기준으로 데이터를 묶고 정렬합니다.
     var cityStats: [(name: String, count: Int, records: [TravelRecord])] {
-        // 도시명으로 그룹화 (예: "파리" -> 파리에서 간 여행 기록 배열)
         let grouped = Dictionary(grouping: records, by: { $0.cityName })
         return grouped.map { (name: $0.key, count: $0.value.count, records: $0.value) }
-            .sorted { $0.count > $1.count } // 방문 횟수 순으로 정렬
+            .sorted { $0.count > $1.count }
     }
     
     var body: some View {
         NavigationStack {
             List(cityStats, id: \.name) { stat in
-                // 💡 도시를 누르면 해당 도시에서 다녀온 기록을 모아서 보여주는 화면으로 이동
                 NavigationLink(destination: CityDetailView(cityName: stat.name, records: stat.records)) {
                     HStack {
                         Text(stat.name)
@@ -193,14 +180,12 @@ struct CityListView: View {
     }
 }
 
-// 💡 특정 도시에서 갔던 장소들을 모아서 보여주는 새로운 화면
 struct CityDetailView: View {
     var cityName: String
     var records: [TravelRecord]
     
     var body: some View {
         List(records.sorted(by: { $0.visitDate > $1.visitDate })) { record in
-            // 여기서도 기록을 누르면 상세 화면으로 이동
             NavigationLink(destination: DetailView(record: record)) {
                 HStack {
                     Text(record.placeName)

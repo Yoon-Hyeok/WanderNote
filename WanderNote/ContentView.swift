@@ -12,6 +12,6 @@ struct ContentView: View {
             ProfileView()
                 .tabItem { Label("프로필", systemImage: "person.crop.circle.fill") }
         }
-        .tint(.purple) // 기획서의 보라색 테마 반영
+        .tint(.purple)
     }
 }

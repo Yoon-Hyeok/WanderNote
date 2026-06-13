@@ -3,7 +3,7 @@ import SwiftData
 import PhotosUI
 import MapKit
 import Photos
-import CoreLocation // 💡 주소 변환(지오코딩)을 위해 추가
+import CoreLocation
 
 struct AddView: View {
     @Environment(\.modelContext) private var modelContext
@@ -19,7 +19,6 @@ struct AddView: View {
     
     @State private var latitude: Double = 37.5665
     @State private var longitude: Double = 126.9780
-    // 💡 선택된 위치의 도시명을 저장할 변수 (기본값 서울)
     @State private var cityName: String = "서울특별시"
     
     @State private var isShowingLocationPicker = false
@@ -45,41 +44,36 @@ struct AddView: View {
                         }
                     }
                     .onChange(of: selectedItem) { _, newItem in
-                                            Task {
-                                                // 1. 화면에 보여줄 사진 데이터 불러오기
-                                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                                    await MainActor.run {
-                                                        self.selectedPhotoData = data
-                                                    }
-                                                }
-                                                
-                                                // 2. 사진에서 메타데이터(날짜, 위치) 추출하기
-                                                if let localID = newItem?.itemIdentifier {
-                                                    let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-                                                    
-                                                    if status == .authorized || status == .limited {
-                                                        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
-                                                        
-                                                        // 원본 데이터(asset)를 성공적으로 가져왔다면
-                                                        if let asset = fetchResult.firstObject {
-                                                            await MainActor.run {
-                                                                // 💡 [추가된 부분] 사진을 찍은 날짜가 있다면 '방문 날짜' 자동 업데이트!
-                                                                if let creationDate = asset.creationDate {
-                                                                    self.visitDate = creationDate
-                                                                }
-                                                                
-                                                                // 사진에 GPS 위치 정보가 있다면 '위도/경도/도시명' 자동 업데이트!
-                                                                if let location = asset.location {
-                                                                    self.latitude = location.coordinate.latitude
-                                                                    self.longitude = location.coordinate.longitude
-                                                                    extractCityName(from: location)
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                await MainActor.run {
+                                    self.selectedPhotoData = data
+                                }
+                            }
+                            
+                            if let localID = newItem?.itemIdentifier {
+                                let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+                                
+                                if status == .authorized || status == .limited {
+                                    let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
+                                    
+                                    if let asset = fetchResult.firstObject {
+                                        await MainActor.run {
+                                            if let creationDate = asset.creationDate {
+                                                self.visitDate = creationDate
+                                            }
+                                            
+                                            if let location = asset.location {
+                                                self.latitude = location.coordinate.latitude
+                                                self.longitude = location.coordinate.longitude
+                                                extractCityName(from: location)
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 
                 Section(header: Text("기본 정보")) {
@@ -92,7 +86,6 @@ struct AddView: View {
                         Image(systemName: "mappin.and.ellipse")
                             .foregroundColor(.purple)
                         
-                        // 💡 사용자가 선택한 위치의 '도시명'을 보여줌
                         Text(cityName)
                             .foregroundColor(.primary)
                         
@@ -137,7 +130,6 @@ struct AddView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("저장하기") {
-                        // 💡 저장할 때 cityName도 함께 저장
                         let newRecord = TravelRecord(
                             placeName: placeName,
                             visitDate: visitDate,
@@ -157,7 +149,6 @@ struct AddView: View {
                 }
             }
             .sheet(isPresented: $isShowingLocationPicker) {
-                // 💡 LocationPickerView에 cityName을 바인딩으로 넘김
                 LocationPickerView(latitude: $latitude, longitude: $longitude, cityName: $cityName)
             }
             .alert("저장 완료", isPresented: $showingSaveAlert) {
@@ -180,7 +171,6 @@ struct AddView: View {
         cityName = "서울특별시"
     }
     
-    // 💡 좌표(CLLocation)를 받아서 도시명으로 변환하는 함수
     private func extractCityName(from location: CLLocation) {
         CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
             if let placemark = placemarks?.first {
@@ -193,7 +183,7 @@ struct AddView: View {
 struct LocationPickerView: View {
     @Binding var latitude: Double
     @Binding var longitude: Double
-    @Binding var cityName: String // 💡 추가됨
+    @Binding var cityName: String
     @Environment(\.dismiss) private var dismiss
     
     @State private var searchText = ""
@@ -287,11 +277,9 @@ struct LocationPickerView: View {
         selectedCoordinate = coordinate
         position = .region(MKCoordinateRegion(center: coordinate, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
         
-        // 💡 지도에서 선택하거나 검색한 위치의 좌표를 '도시 이름'으로 변환
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         CLGeocoder().reverseGeocodeLocation(location) { placemarks, _ in
             if let placemark = placemarks?.first {
-                // 시/군/구 -> 도/광역시 -> 국가 순으로 이름 추출
                 self.cityName = placemark.locality ?? placemark.administrativeArea ?? placemark.country ?? "알 수 없는 도시"
             }
         }

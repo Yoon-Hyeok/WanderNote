@@ -5,7 +5,6 @@ import PhotosUI
 struct EditView: View {
     @Environment(\.dismiss) private var dismiss
     
-    // 💡 @Bindable을 사용하면 값이 변경될 때 SwiftData DB에 자동으로 동기화됩니다.
     @Bindable var record: TravelRecord
     
     @State private var selectedItem: PhotosPickerItem?
@@ -32,14 +31,13 @@ struct EditView: View {
                     .onChange(of: selectedItem) { _, newItem in
                         Task {
                             if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                record.photoData = data // 새로운 사진으로 교체
+                                record.photoData = data
                             }
                         }
                     }
                 }
                 
                 Section(header: Text("기본 정보")) {
-                    // record의 속성에 직접 바인딩($)하여 즉시 값을 수정합니다.
                     TextField("장소명", text: $record.placeName)
                     DatePicker("방문 날짜", selection: $record.visitDate, displayedComponents: .date)
                 }
@@ -58,7 +56,7 @@ struct EditView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("완료") {
-                        dismiss() // @Bindable 덕분에 별도의 save() 호출 없이도 자동 반영됨
+                        dismiss()
                     }
                     .bold()
                     .tint(.purple)
