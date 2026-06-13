@@ -54,3 +54,6 @@ WanderNote는 단순한 사진 저장 앱을 넘어, 사용자가 여행 장소,
 - **지도 화면**: 지도 및 여행 위치 핀 표시, 핀 선택 시 정보 카드 팝업
 - **추가 화면**: 갤러리 사진 선택 (날짜/위치 자동 기입), 장소명, 방문 날짜, 메모, 별점 작성
 - **프로필 화면**: 여행 통계 요약, 연도별 월별 여행 차트, 방문한 도시별 기록 조회
+
+## 소개 영상
+[![WanderNote 소개 영상](https://img.youtube.com/vi/QB6h0dG9WYC-jTJa/hqdefault.jpg)](hhttps://youtube.com/shorts/E2HKtjggm5o?si=QB6h0dG9WYC-jTJa)
